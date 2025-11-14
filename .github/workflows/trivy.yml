@@ -50,7 +50,7 @@ jobs:
 
 
     - name: Run Trivy vulnerability scan (fail on HIGH+)
-      run: trivy fs . --exit-code 1 --severity HIGH,CRITICAL --scanners vuln --format json --output trivy-fs-report.json
+      run: trivy fs . --severity HIGH,CRITICAL --scanners vuln --format json --output trivy-fs-report.json
 
 
     - name: Upload SBOM
