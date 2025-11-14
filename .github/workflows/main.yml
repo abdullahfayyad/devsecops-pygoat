@@ -1,0 +1,31 @@
+name: ci sast 
+
+on: [push]
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
+
+    
+jobs:
+  sast_scan:
+    name: run bandit scan 
+    runs-on: ubuntu-latest
+  
+    steps:
+    - name: chcek code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python 
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.8
+        
+    - name: Install bandit
+      run: pip install bandit
+      
+    - name: run bandit
+      run: bandit -r . 
+      
+        
