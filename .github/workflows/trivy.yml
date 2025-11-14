@@ -1,0 +1,73 @@
+name: dependency scans
+
+on: [push]
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+      
+    - name: setup python
+      uses: actions/setup-python@v3
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+
+    - name: Install Syft
+      run: curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      
+    - name: Generate SBOM
+      run: syft requirements.txt -o cyclonedx-json=sbom.json
+
+    - name: Install Grype
+      run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+    - name: Run Grype vulnerability scan (fail on HIGH+)
+      run: grype sbom:sbom.json --fail-on high -o json > grype-report.json
+
+
+    - name: Install Trivy
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+
+    - name: Run Trivy vulnerability scan (fail on HIGH+)
+      run: trivy fs . --exit-code 1 --severity HIGH,CRITICAL --scanners vuln --format json --output trivy-fs-report.json
+
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+          name: sbom
+          path: sbom.json
+
+    - name: Upload Grype report
+      uses: actions/upload-artifact@v4
+      with:
+          name: grype-report
+          path: grype-report.json
+
+    
+
+
+    - name: Upload Trivy filesystem report
+      uses: actions/upload-artifact@v4
+      with:
+          name: trivy-fs-report
+          path: trivy-fs-report.json
+
+      
+
+    
